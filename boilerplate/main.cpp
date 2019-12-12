@@ -70,7 +70,7 @@ void printHead(uint8_t *packet) {
 }
 void printRip(RipPacket x) {
   printf("Rip Packet: num = %d\n", x.numEntries);
-  for (int i = 0; i < x.numEntries) {
+  for (int i = 0; i < x.numEntries; i++) {
     RipEntry y = x.entries[i];
     printf("  %2d: [addr = %x\tmask = %x\tmetric=%d\tnexthop = %x]\n", i, y.addr, y.mask, reverse(y.metric), y.nexthop);
   }

@@ -1,6 +1,7 @@
 #include "rip.h"
 #include <stdint.h>
 #include <stdlib.h>
+#include <cstdio>
 
 /*
   在头文件 rip.h 中定义了如下的结构体：
@@ -102,6 +103,7 @@ bool disassemble(const uint8_t *packet, uint32_t len, RipPacket *output) {
 		ret->entries[i].mask = 		get(packet,20*i+8, 4);
 		ret->entries[i].nexthop = 	get(packet,20*i+12, 4);
 		ret->entries[i].metric = 	get(packet,20*i+16, 4);
+		printf("metric : %x %x %x %x\n", packet[20*i+16], packet[20*i+17], packet[20*i+18], packet[20*i+19]);
 	}
 	return true;
 }
