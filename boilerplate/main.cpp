@@ -90,7 +90,7 @@ int main(int argc, char *argv[]) {
   // 10.0.3.0/24 if 3
   for (uint32_t i = 0; i < N_IFACE_ON_BOARD; i++) {
     RoutingTableEntry entry = {
-        .addr = addrs[i] & 0x00FFFFFF, // big endian
+        .addr = addrs[i], // big endian
         .len = 24,        // small endian
         .if_index = i,    // small endian
         .nexthop = 0,      // big endian, means direct
@@ -256,6 +256,7 @@ int main(int argc, char *argv[]) {
               if (x.metric+1 < reverse(y.metric)) {
                 hasupdate = true;
                 RoutingTableEntry s = t;
+                printf("update path %x metric = %d\n", x.addr, x.metric);
                 s.addr = x.addr; s.metric = reverse(x.metric); s.nexthop = x.nexthop; s.if_index = if_index;
                 update(true, s);
               }
@@ -264,7 +265,8 @@ int main(int argc, char *argv[]) {
             if (!hasfound && x.metric < 16) {
               hasupdate = true;
               RoutingTableEntry s;
-              s.addr = x.addr; s.metric = reverse(x.metric); s.nexthop = x.nexthop; s.if_index = if_index;
+              printf("add path %x metric = %d\n", x.addr, x.metric);
+              s.addr = x.addr; s.len = __builtin_popcount(x.mask); s.metric = reverse(x.metric); s.nexthop = x.nexthop; s.if_index = if_index;
               update(true, s);
             }
           }
