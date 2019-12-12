@@ -68,6 +68,13 @@ void printHead(uint8_t *packet) {
   for (int i = 0; i < 32; i++) printf("%x ", packet[i]);
   printf("\n");
 }
+void printRip(RipPacket x) {
+  printf("Rip Packet: num = %d\n", x.numEntries);
+  for (int i = 0; i < x.numEntries) {
+    RipEntry y = x.entries[i];
+    printf("  %2d: [addr = %x\tmask = %x\tmetric=%d\tnexthop = %x]\n", i, y.addr, y.mask, reverse(y.metric), y.nexthop);
+  }
+}
 int main(int argc, char *argv[]) {
   // 0a.
   int res = HAL_Init(1, addrs);
@@ -200,7 +207,10 @@ int main(int argc, char *argv[]) {
       RipPacket rip;
       // check and validate
       if (disassemble(packet, res, &rip)) {
+        printf("Dest is me and valid packet\n");
+        printRip(rip);
         if (rip.command == 1) {
+          printf("request\n");
           // 3a.3 request, ref. RFC2453 3.9.1
           // only need to respond to whole table requests in the lab
           if (rip.numEntries != 1 || reverse(rip.entries[0].metric) != 16) {
@@ -229,6 +239,7 @@ int main(int argc, char *argv[]) {
           // send it back
           HAL_SendIPPacket(if_index, output, rip_len + 20 + 8, src_mac);
         } else {
+          printf("response\n");
           // 3a.2 response, ref. RFC2453 3.9.2
           // update routing table
           bool hasupdate = false;
@@ -258,6 +269,7 @@ int main(int argc, char *argv[]) {
             }
           }
           if (hasupdate) {
+            printf("router table updated\n");
             for (uint32_t i = 0; i < N_IFACE_ON_BOARD; i++) {
               RipPacket rip;
               rip.command = 2;
@@ -279,8 +291,11 @@ int main(int argc, char *argv[]) {
  
           }
         }
+      } else {
+        printf("dest is me but invalid packet\n");
       }
     } else {
+      printf("dest is not me");
       // 3b.1 dst is not me
       // forward
       // beware of endianness
