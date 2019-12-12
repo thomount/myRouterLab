@@ -22,8 +22,7 @@ uint8_t output[2048];
 // 2: 10.0.2.1
 // 3: 10.0.3.1
 // 你可以按需进行修改，注意端序
-in_addr_t addrs[N_IFACE_ON_BOARD] = {0x0100000a, 0x0101000a, 0x0102000a,
-                                     0x0103000a};
+in_addr_t addrs[N_IFACE_ON_BOARD] = {0x0203a8c0, 0x0104a8c0, 0x0102000a, 0x0103000a};
 
 void addHead(uint8_t * a, int totlen, uint32_t src, uint32_t dst) {
   a[0] = 0x45;
@@ -58,6 +57,17 @@ RipEntry getEntry(RoutingTableEntry x) {
   };
 }
 
+void printRouterTable() {
+  printf("Router table: \n");
+  for (RoutingTableEntry x: table)
+    printf("\t[addr = %x\tlen = %d\tmetric = %d\tnexthop = %x]\n", x.addr, x.len, reverse(x.metric), x.nexthop);
+}
+
+void printHead(uint8_t *packet) {
+  printf("Receive Head:  ");
+  for (int i = 0; i < 32; i++) printf("%x ", packet[i]);
+  printf("\n");
+}
 int main(int argc, char *argv[]) {
   // 0a.
   int res = HAL_Init(1, addrs);
@@ -112,6 +122,7 @@ int main(int argc, char *argv[]) {
       // ref. RFC2453 3.8
       // multicast MAC for 224.0.0.9 is 01:00:5e:00:00:09
       printf("10s Timer\n");
+      printRouterTable();
       last_time = time;
 
       for (uint32_t i = 0; i < N_IFACE_ON_BOARD; i++) {
@@ -162,6 +173,8 @@ int main(int argc, char *argv[]) {
 
       printf("Invalid IP Checksum\n");
       continue;
+    } else {
+      printHead(packet);
     }
     in_addr_t src_addr, dst_addr;
     // extract src_addr and dst_addr from packet
