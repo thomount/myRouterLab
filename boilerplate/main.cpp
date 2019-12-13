@@ -43,8 +43,11 @@ void addHead(uint8_t * a, int totlen, uint32_t src, uint32_t dst) {
   a[26] = a[27] = 0x00;
 }
 uint32_t reverse(uint32_t x) {
-  int ret = 0;
-  for (int i = 0; i < 4; i++, ret <<= 8, x >>= 8) ret |= x & 255;
+  uint32_t ret = 0;
+  for (int i = 0; i < 4; i++, x >>= 8) {
+    ret <<= 8;
+    ret |= (x & 255);
+  }
   return ret;
 }
 
@@ -60,7 +63,7 @@ RipEntry getEntry(RoutingTableEntry x) {
 void printRouterTable() {
   printf("Router table: \n");
   for (RoutingTableEntry x: table)
-    printf("\t[addr = %x\tlen = %d\tmetric = %d\tnexthop = %x]\n", x.addr, x.len, reverse(x.metric), x.nexthop);
+    printf("\t[addr = %x\tlen = %d\tmetric = %d\tnexthop = %x\tindex = %d]\n", x.addr, x.len, reverse(x.metric), x.nexthop, x.if_index);
 }
 
 void printHead(uint8_t *packet) {
@@ -72,7 +75,7 @@ void printRip(RipPacket x) {
   printf("Rip Packet: num = %d\n", x.numEntries);
   for (int i = 0; i < x.numEntries; i++) {
     RipEntry y = x.entries[i];
-    printf("  %2d: [addr = %x\tmask = %x\tmetric=%d\tnexthop = %x]\n", i, y.addr, y.mask, reverse(y.metric), y.nexthop);
+    printf("  %2d: [addr = %x\tmask = %x\tmetric=%d\tnexthop = %x\t]\n", i, y.addr, y.mask, reverse(y.metric), y.nexthop);
   }
 }
 int main(int argc, char *argv[]) {
@@ -123,7 +126,7 @@ int main(int argc, char *argv[]) {
   uint64_t last_time = 0;
   while (1) {
     uint64_t time = HAL_GetTicks();
-    if (time > last_time + 10 * 1000) {
+    if (time > last_time + 5 * 1000) {
       // What to do?
       // send complete routing table to every interface
       // ref. RFC2453 3.8
@@ -266,7 +269,7 @@ int main(int argc, char *argv[]) {
               hasupdate = true;
               RoutingTableEntry s;
               printf("add path %x metric = %d\n", x.addr, x.metric);
-              s.addr = x.addr; s.len = __builtin_popcount(x.mask); s.metric = reverse(x.metric); s.nexthop = x.nexthop; s.if_index = if_index;
+              s.addr = x.addr; s.len = __builtin_popcount(x.mask); s.metric = reverse(x.metric); s.nexthop = src_addr; s.if_index = if_index;
               update(true, s);
             }
           }
@@ -279,7 +282,7 @@ int main(int argc, char *argv[]) {
               for (RoutingTableEntry x: table) {
                 if ((addrs[i] & ((1ll<<table[i].len)-1)) == (x.addr&((1ll<<x.len)-1))) continue;
                 if (x.nexthop == addrs[i]) continue;
-                //if (x.if_index == i) continue;
+                if (x.if_index == i) continue;
                 rip.entries[rip.numEntries++] = getEntry(x);
               }
               addHead(output, rip.numEntries*20+32, addrs[i], 0x090000e0);
